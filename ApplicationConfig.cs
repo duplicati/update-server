@@ -14,6 +14,7 @@ namespace UpdaterMirror;
 /// <param name="SeqLogApiKey">Optional API key for logging to Seq</param>
 /// <param name="RootRedirect">Redirect url for the root</param>
 /// <param name="ManualExpireApiKey">API key for manually expiring items</param>
+/// <param name="KeepForever">Flag toggling forever caching</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -24,7 +25,8 @@ public record ApplicationConfig(
     string SeqLogUrl,
     string SeqLogApiKey,
     string RootRedirect,
-    string ManualExpireApiKey
+    string ManualExpireApiKey,
+    bool KeepForever
 )
 {
     /// <summary>
@@ -76,6 +78,11 @@ public record ApplicationConfig(
     private const string ManualExpireApiKeyEnvKey = "APIKEY";
 
     /// <summary>
+    /// The environment key for manually expiring items
+    /// </summary>
+    private const string KeepForeverEnvKey = "KEEP_FOREVER";
+
+    /// <summary>
     /// Loads settings from the environment
     /// </summary>
     /// <returns>A typed instance with settings</returns>
@@ -94,7 +101,9 @@ public record ApplicationConfig(
             Environment.GetEnvironmentVariable(SeqApiKeyEnvKey) ?? string.Empty,
 
             Environment.GetEnvironmentVariable(RootRedirectEnvKey) ?? string.Empty,
-            Environment.GetEnvironmentVariable(ManualExpireApiKeyEnvKey) ?? string.Empty
+            Environment.GetEnvironmentVariable(ManualExpireApiKeyEnvKey) ?? string.Empty,
+
+            ParseBool(Environment.GetEnvironmentVariable(KeepForeverEnvKey), false)
         );
 
     /// <summary>
@@ -106,6 +115,21 @@ public record ApplicationConfig(
         => string.IsNullOrEmpty(setting) || setting.StartsWith("base64:")
                 ? setting
                 : Path.GetFullPath(Environment.ExpandEnvironmentVariables(setting));
+
+    /// <summary>
+    /// Parses a boolean string value
+    /// </summary>
+    /// <param name="value">The value to parse</param>
+    /// <param name="defaultValue">The default value, if <paramref name="value"/> is not a boolean</param>
+    /// <returns>The parsed value</returns>
+    private static bool ParseBool(string? value, bool defaultValue)
+        => string.IsNullOrWhiteSpace(value)
+            ? defaultValue
+            : value.ToLowerInvariant().Trim() switch {
+                "t" or "true" or "1" or "yes" or "on" => true,
+                "f" or "false" or "0" or "no" or "off" => false,
+                _ => defaultValue
+            };
 
     /// <summary>
     /// Parses a duration-like string into a value, supporting common s/m/h/d/w suffixes.

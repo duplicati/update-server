@@ -65,7 +65,7 @@ if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
         return Task.CompletedTask;
     });
 
-var cacheManager = new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod);
+var cacheManager = new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod, appconfig.KeepForever);
 
 if (!string.IsNullOrWhiteSpace(appconfig.ManualExpireApiKey))
     app.MapPost("/reload", async ctx => {

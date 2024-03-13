@@ -34,6 +34,11 @@ public class CacheManager : IDisposable
     private readonly TimeSpan m_validityPeriod;
 
     /// <summary>
+    /// Flag indicating that items do not expire
+    /// </summary>
+    private readonly bool m_keepForever;
+
+    /// <summary>
     /// The duration to wait for additional events after being triggered
     /// </summary>
     public static readonly TimeSpan ExpireTriggerJitter = TimeSpan.FromSeconds(1);
@@ -75,9 +80,10 @@ public class CacheManager : IDisposable
     /// <param name="cachePath">The path to the cache</param>
     /// <param name="maxNotFound">The maximum number of not-found items to track</param>
     /// <param name="maxSize">The maximum size of cached data</param>
-    /// <param name="validityPeriod">The duration a cached entry is valid for</param>
-    public CacheManager(string storage, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod)
-        : this(KVPSLoader.Default.Create(storage), cachePath, maxNotFound, maxSize, validityPeriod)
+    /// <param name="maxSize">The maximum size of cached data</param>
+    /// <param name="keepForever">Flag indicating if cached items are kept forever</param>
+    public CacheManager(string storage, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod, bool keepForever)
+        : this(KVPSLoader.Default.Create(storage), cachePath, maxNotFound, maxSize, validityPeriod, keepForever)
     {}
 
     /// <summary>
@@ -88,7 +94,8 @@ public class CacheManager : IDisposable
     /// <param name="maxNotFound">The maximum number of not-found items to track</param>
     /// <param name="maxSize">The maximum size of cached data</param>
     /// <param name="validityPeriod">The duration a cached entry is valid for</param>
-    public CacheManager(IKVPS store, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod)
+    /// <param name="keepForever">Flag indicating if cached items are kept forever</param>
+    public CacheManager(IKVPS store, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod, bool keepForever)
     {
         Store = store ?? throw new ArgumentNullException(nameof(store));
         CachePath = cachePath;
@@ -144,7 +151,7 @@ public class CacheManager : IDisposable
         res.UpdateLastAccessed();
         
         // TODO: Serving a stale entry
-        if (res.ExpiresOn < DateTime.UtcNow)
+        if (!m_keepForever && res.ExpiresOn < DateTime.UtcNow)
             TriggerLimitCheck();
 
         return res;
@@ -256,7 +263,7 @@ public class CacheManager : IDisposable
 
                 // Add everything that has expired
                 expired.UnionWith(
-                    m_items.Where(x => x.Value.State == RemoteAccessItem.AccessState.Expired || x.Value.ExpiresOn < now)
+                    m_items.Where(x => x.Value.State == RemoteAccessItem.AccessState.Expired || (!m_keepForever && x.Value.ExpiresOn < now))
                     .Select(x => x.Key)
                 );
 
