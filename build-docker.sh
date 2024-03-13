@@ -1,0 +1,1 @@
+docker build -t duplicati/update-server . --push
