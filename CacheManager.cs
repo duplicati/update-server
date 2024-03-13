@@ -34,11 +34,6 @@ public class CacheManager : IDisposable
     private readonly TimeSpan m_validityPeriod;
 
     /// <summary>
-    /// The duration between expiration enforcements, if nothing triggers it
-    /// </summary>
-    public static readonly TimeSpan AutoExpireTime = TimeSpan.FromHours(12);
-
-    /// <summary>
     /// The duration to wait for additional events after being triggered
     /// </summary>
     public static readonly TimeSpan ExpireTriggerJitter = TimeSpan.FromSeconds(1);
@@ -105,8 +100,13 @@ public class CacheManager : IDisposable
             Directory.CreateDirectory(cachePath);
 
         Task.Run(async () => {
+            // Use the validity period to check expiration
+            // Add 1 second to reduce items being just outside the timespan
+            var checkInterval = (validityPeriod / 2)
+                    .Add(TimeSpan.FromSeconds(1));
+
             while(!m_disposed) {
-                if (await Task.WhenAny(Task.Delay(AutoExpireTime), m_limitSignal.Task) == m_limitSignal.Task)
+                if (await Task.WhenAny(Task.Delay(checkInterval), m_limitSignal.Task) == m_limitSignal.Task)
                     Interlocked.Exchange(ref m_limitSignal, new TaskCompletionSource<bool>());
 
                 try 
