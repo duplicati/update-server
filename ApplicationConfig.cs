@@ -9,8 +9,10 @@ namespace UpdaterMirror;
 /// <param name="CachePath">Path to on-disk cache</param>
 /// <param name="MaxNotFound">The maximum not-found (404) entries in cache</param>
 /// <param name="MaxSize">The maximum size of the on-disk cached items</param>
+/// <param name="ValidityPeriod">The item validity period</param>
 /// <param name="SeqLogUrl">Url for Seq log destination</param>
 /// <param name="SeqLogApiKey">Optional API key for logging to Seq</param>
+/// <param name="RootRedirect">Redirect url for the root</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -19,7 +21,8 @@ public record ApplicationConfig(
     long MaxSize,
     TimeSpan ValidityPeriod,
     string SeqLogUrl,
-    string SeqLogApiKey
+    string SeqLogApiKey,
+    string RootRedirect
 )
 {
     /// <summary>
@@ -61,6 +64,11 @@ public record ApplicationConfig(
     private const string SeqApiKeyEnvKey = "SEQ_APIKEY";
 
     /// <summary>
+    /// Url to redirect to when accessing the root
+    /// </summary>
+    private const string RootRedirectEnvKey = "REDIRECT";
+
+    /// <summary>
     /// Loads settings from the environment
     /// </summary>
     /// <returns>A typed instance with settings</returns>
@@ -76,7 +84,9 @@ public record ApplicationConfig(
             ParseDuration(Environment.GetEnvironmentVariable(ValidityPeriodEnvKey), "1d"),
 
             Environment.GetEnvironmentVariable(SeqUrlEnvKey) ?? string.Empty,
-            Environment.GetEnvironmentVariable(SeqApiKeyEnvKey) ?? string.Empty
+            Environment.GetEnvironmentVariable(SeqApiKeyEnvKey) ?? string.Empty,
+
+            Environment.GetEnvironmentVariable(RootRedirectEnvKey) ?? string.Empty
         );
 
     /// <summary>

@@ -18,3 +18,4 @@ Optional variables:
 - `SEQ_URL`: url for logging to Seq
 - `SEQ_APIKEY`: API key for logging to Seq
 - `CACHE_TIME`: The duration items are kept cached. Can use s/m/h/d/w suffix. Default is `1d`.
+- `REDIRECT`: A url to redirect to, when accessing `/`

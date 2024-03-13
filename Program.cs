@@ -52,6 +52,12 @@ var filetypeMappings = new Dictionary<string, string>(StringComparer.OrdinalIgno
     {".msi", "application/x-msi" },
 };
 
+if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
+    app.MapGet("/", ctx => { 
+        ctx.Response.Redirect(appconfig.RootRedirect, true);
+        return Task.CompletedTask;
+    });
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new RemoteAccessFileProvider(
