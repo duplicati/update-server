@@ -53,6 +53,12 @@ var filetypeMappings = new Dictionary<string, string>(StringComparer.OrdinalIgno
     {".msi", "application/x-msi" },
 };
 
+app.MapGet("/robots.txt", async ctx => {
+    // Move along, nothing to see here
+    ctx.Response.ContentType = "text/plain";
+    await ctx.Response.WriteAsync(@"User-agent: *\r\nDisallow: /", ctx.RequestAborted);
+});
+
 if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
     app.MapGet("/", ctx => { 
         ctx.Response.Redirect(appconfig.RootRedirect, true);
