@@ -274,6 +274,32 @@ public class CacheManager : IDisposable
             x.Expire();
     }
 
+    /// <summary>
+    /// Force expire select items
+    /// </summary>
+    /// <param name="keys">The keys to expire</param>
+    public void ForceExpire(HashSet<string> keys)
+    {
+        var toExpire = new List<RemoteAccessItem>();
+        lock(m_lock)
+        {
+            foreach(var k in keys)
+            {
+                var e = m_items.GetValueOrDefault(k);
+                if (e != null)
+                {
+                    m_items.Remove(k);
+                    toExpire.Add(e);
+                }
+            }
+        }
+
+        // Expire all items, without a lock
+        foreach(var x in toExpire)
+            x.Expire();
+
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {

@@ -15,7 +15,15 @@ Required variables:
 Optional variables:
 - `MAX_NOT_FOUND`: The maximum number of 404 responses from the remote to store. Can use b/k/m/g/t/p suffix. Default is `10k`.
 - `MAX_SIZE`: The maximum size of the disk to use for caching. Can use b/k/m/g/t/p suffix. Default is `10m`.
-- `SEQ_URL`: url for logging to Seq
-- `SEQ_APIKEY`: API key for logging to Seq
+- `SEQ_URL`: url for logging to Seq.
+- `SEQ_APIKEY`: API key for logging to Seq.
 - `CACHE_TIME`: The duration items are kept cached. Can use s/m/h/d/w suffix. Default is `1d`.
-- `REDIRECT`: A url to redirect to, when accessing `/`
+- `REDIRECT`: A url to redirect to, when accessing `/`.
+- `APIKEY`: API key to enable the `/reload` endpoint for forced expiration of cached items.
+
+## Force expire
+
+To force expire items, set `APIKEY` and use a request similar to:
+```
+curl -X POST --data '["key1","item/key2"]' 'https://example.com/reload' --header 'X-API-KEY:<APIKEY>'
+```

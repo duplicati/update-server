@@ -13,6 +13,7 @@ namespace UpdaterMirror;
 /// <param name="SeqLogUrl">Url for Seq log destination</param>
 /// <param name="SeqLogApiKey">Optional API key for logging to Seq</param>
 /// <param name="RootRedirect">Redirect url for the root</param>
+/// <param name="ManualExpireApiKey">API key for manually expiring items</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -22,7 +23,8 @@ public record ApplicationConfig(
     TimeSpan ValidityPeriod,
     string SeqLogUrl,
     string SeqLogApiKey,
-    string RootRedirect
+    string RootRedirect,
+    string ManualExpireApiKey
 )
 {
     /// <summary>
@@ -64,9 +66,14 @@ public record ApplicationConfig(
     private const string SeqApiKeyEnvKey = "SEQ_APIKEY";
 
     /// <summary>
-    /// Url to redirect to when accessing the root
+    /// The environment key for url to redirect to when accessing the root
     /// </summary>
     private const string RootRedirectEnvKey = "REDIRECT";
+
+    /// <summary>
+    /// The environment key for manually expiring items
+    /// </summary>
+    private const string ManualExpireApiKeyEnvKey = "APIKEY";
 
     /// <summary>
     /// Loads settings from the environment
@@ -86,7 +93,8 @@ public record ApplicationConfig(
             Environment.GetEnvironmentVariable(SeqUrlEnvKey) ?? string.Empty,
             Environment.GetEnvironmentVariable(SeqApiKeyEnvKey) ?? string.Empty,
 
-            Environment.GetEnvironmentVariable(RootRedirectEnvKey) ?? string.Empty
+            Environment.GetEnvironmentVariable(RootRedirectEnvKey) ?? string.Empty,
+            Environment.GetEnvironmentVariable(ManualExpireApiKeyEnvKey) ?? string.Empty
         );
 
     /// <summary>

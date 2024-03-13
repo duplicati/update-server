@@ -19,9 +19,11 @@
             },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "PRIMARY": "file://${workspaceFolder}/data",
+                "PRIMARY": "file://${workspaceFolder}/data?pathmapped=true",
                 "CACHEPATH": "${workspaceFolder}/cache",
-                "MAX_SIZE": "30m"
+                "MAX_SIZE": "30m",
+                // "REDIRECT": "https://google.com",
+                "APIKEY": "123"
             }
         }
     ]

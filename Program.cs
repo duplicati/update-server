@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Serilog;
@@ -58,11 +59,24 @@ if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
         return Task.CompletedTask;
     });
 
+var cacheManager = new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod);
+
+if (!string.IsNullOrWhiteSpace(appconfig.ManualExpireApiKey))
+    app.MapPost("/reload", async ctx => {
+        if (!ctx.Request.Headers.ContainsKey("X-API-KEY") || ctx.Request.Headers["X-API-KEY"].FirstOrDefault() != appconfig.ManualExpireApiKey)
+        {
+            ctx.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return;
+        }
+
+        var keys = await System.Text.Json.JsonSerializer.DeserializeAsync<IEnumerable<string>>(ctx.Request.Body, cancellationToken: ctx.RequestAborted)
+            ?? Array.Empty<string>();
+        cacheManager.ForceExpire(keys.Where(x => !string.IsNullOrWhiteSpace(x)).ToHashSet());
+    });
+
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new RemoteAccessFileProvider(
-        new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod)
-    ),
+    FileProvider = new RemoteAccessFileProvider(cacheManager),
     ContentTypeProvider = new FileExtensionContentTypeProvider(filetypeMappings),
     DefaultContentType = "application/octet-stream",     
     RequestPath = new PathString(""),
