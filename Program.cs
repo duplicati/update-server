@@ -86,7 +86,16 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = new FileExtensionContentTypeProvider(filetypeMappings),
     DefaultContentType = "application/octet-stream",     
     RequestPath = new PathString(""),
-    ServeUnknownFileTypes = true
+    ServeUnknownFileTypes = true,
+    OnPrepareResponse = (context) =>
+    {
+        var headers = context.Context.Response.GetTypedHeaders();
+        headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+        {
+            Public = true,
+            MaxAge = appconfig.ValidityPeriod.Add(TimeSpan.FromSeconds(-1))
+        };
+    }
 });
 
 try
