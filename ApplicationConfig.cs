@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace UpdaterMirror;
 
 /// <summary>
@@ -14,7 +16,8 @@ namespace UpdaterMirror;
 /// <param name="SeqLogApiKey">Optional API key for logging to Seq</param>
 /// <param name="RootRedirect">Redirect url for the root</param>
 /// <param name="ManualExpireApiKey">API key for manually expiring items</param>
-/// <param name="KeepForever">Flag toggling forever caching</param>
+/// <param name="KeepForeverRegex">Expression to selectively disable expiration</param>
+/// <param name="NoCacheRegex">Expression to selectively disable caching</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -26,7 +29,8 @@ public record ApplicationConfig(
     string SeqLogApiKey,
     string RootRedirect,
     string ManualExpireApiKey,
-    bool KeepForever
+    Regex? KeepForeverRegex,
+    Regex? NoCacheRegex
 )
 {
     /// <summary>
@@ -78,9 +82,14 @@ public record ApplicationConfig(
     private const string ManualExpireApiKeyEnvKey = "APIKEY";
 
     /// <summary>
-    /// The environment key for manually expiring items
+    /// The environment key for finding manually expiring items
     /// </summary>
-    private const string KeepForeverEnvKey = "KEEP_FOREVER";
+    private const string KeepForeverRegexEnvKey = "KEEP_FOREVER_REGEX";
+
+    /// <summary>
+    /// The environement key for toggling caching of items
+    /// </summary>
+    private const string NoCacheRegexEnvKey = "NO_CACHE_REGEX";
 
     /// <summary>
     /// Loads settings from the environment
@@ -103,7 +112,8 @@ public record ApplicationConfig(
             Environment.GetEnvironmentVariable(RootRedirectEnvKey) ?? string.Empty,
             Environment.GetEnvironmentVariable(ManualExpireApiKeyEnvKey) ?? string.Empty,
 
-            ParseBool(Environment.GetEnvironmentVariable(KeepForeverEnvKey), false)
+            ParseRegex(Environment.GetEnvironmentVariable(KeepForeverRegexEnvKey)),
+            ParseRegex(Environment.GetEnvironmentVariable(NoCacheRegexEnvKey))
         );
 
     /// <summary>
@@ -115,6 +125,16 @@ public record ApplicationConfig(
         => string.IsNullOrEmpty(setting) || setting.StartsWith("base64:")
                 ? setting
                 : Path.GetFullPath(Environment.ExpandEnvironmentVariables(setting));
+
+    /// <summary>
+    /// Creates a new regular expression instance if the value is set
+    /// </summary>
+    /// <param name="value">The value to use for regex matching</param>
+    /// <returns>The matched value</returns>
+    private static Regex? ParseRegex(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : new Regex(value, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
     /// <summary>
     /// Parses a boolean string value

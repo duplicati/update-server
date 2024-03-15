@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using KVPSButter;
 using Serilog;
 
@@ -34,11 +35,6 @@ public class CacheManager : IDisposable
     private readonly TimeSpan m_validityPeriod;
 
     /// <summary>
-    /// Flag indicating that items do not expire
-    /// </summary>
-    private readonly bool m_keepForever;
-
-    /// <summary>
     /// The duration to wait for additional events after being triggered
     /// </summary>
     public static readonly TimeSpan ExpireTriggerJitter = TimeSpan.FromSeconds(1);
@@ -59,9 +55,14 @@ public class CacheManager : IDisposable
     public IKVPS Store { get; }
 
     /// <summary>
+    /// Regex for selectively keeping items forever
+    /// </summary>
+    public Regex? KeepForeverRegex { get; }
+
+    /// <summary>
     /// The path where cache items are created
     /// </summary>
-    public readonly string CachePath;
+    public string CachePath { get; }
 
     /// <summary>
     /// Flag indicating if we are disposed
@@ -81,9 +82,9 @@ public class CacheManager : IDisposable
     /// <param name="maxNotFound">The maximum number of not-found items to track</param>
     /// <param name="maxSize">The maximum size of cached data</param>
     /// <param name="maxSize">The maximum size of cached data</param>
-    /// <param name="keepForever">Flag indicating if cached items are kept forever</param>
-    public CacheManager(string storage, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod, bool keepForever)
-        : this(KVPSLoader.Default.Create(storage), cachePath, maxNotFound, maxSize, validityPeriod, keepForever)
+    /// <param name="keepForeverRegex">Regex for selecting items to keep forever</param>
+    public CacheManager(string storage, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod, Regex? keepForeverRegex)
+        : this(KVPSLoader.Default.Create(storage), cachePath, maxNotFound, maxSize, validityPeriod, keepForeverRegex)
     {}
 
     /// <summary>
@@ -94,14 +95,15 @@ public class CacheManager : IDisposable
     /// <param name="maxNotFound">The maximum number of not-found items to track</param>
     /// <param name="maxSize">The maximum size of cached data</param>
     /// <param name="validityPeriod">The duration a cached entry is valid for</param>
-    /// <param name="keepForever">Flag indicating if cached items are kept forever</param>
-    public CacheManager(IKVPS store, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod, bool keepForever)
+    /// <param name="keepForeverRegex">Regex for selecting items to keep forever</param>
+    public CacheManager(IKVPS store, string cachePath, int maxNotFound, long maxSize, TimeSpan validityPeriod, Regex? keepForeverRegex)
     {
         Store = store ?? throw new ArgumentNullException(nameof(store));
         CachePath = cachePath;
         m_maxNotFound = Math.Max(10, maxNotFound);
         m_maxSize = Math.Max(1024 * 1024 * 5, maxSize);
         m_validityPeriod = TimeSpan.FromTicks(Math.Max(TimeSpan.FromHours(1).Ticks, validityPeriod.Ticks));
+        KeepForeverRegex = keepForeverRegex;
 
         if (!Directory.Exists(cachePath))
             Directory.CreateDirectory(cachePath);
@@ -151,7 +153,7 @@ public class CacheManager : IDisposable
         res.UpdateLastAccessed();
         
         // TODO: Serving a stale entry
-        if (!m_keepForever && res.ExpiresOn < DateTime.UtcNow)
+        if (res.ShouldExpireNow())
             TriggerLimitCheck();
 
         return res;
@@ -236,6 +238,8 @@ public class CacheManager : IDisposable
             {
                 toExpire.AddRange(m_items.Values);
                 m_items.Clear();
+                m_currentSize = 0;
+                m_notFoundCount = 0;
             }
             else
             {
@@ -263,9 +267,14 @@ public class CacheManager : IDisposable
 
                 // Add everything that has expired
                 expired.UnionWith(
-                    m_items.Where(x => x.Value.State == RemoteAccessItem.AccessState.Expired || (!m_keepForever && x.Value.ExpiresOn < now))
+                    m_items.Where(x => x.Value.State == RemoteAccessItem.AccessState.Expired || x.Value.ShouldExpireNow())
                     .Select(x => x.Key)
                 );
+
+                // Update the counters, in case they are out-of-sync
+                // Do this before the expire callbacks, and before removing them, and while holding the lock
+                m_currentSize = size;
+                m_notFoundCount = m_items.Values.Where(x => x.State == RemoteAccessItem.AccessState.NotFound).Count();
 
                 // Remove and record unique items
                 foreach(var x in expired)

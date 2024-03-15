@@ -65,6 +65,16 @@ public class RemoteAccessItem
     public DateTime LastModified { get; private set; }
 
     /// <summary>
+    /// Gets a value indicating if this entry does not expire
+    /// </summary>
+    public bool NeverExpires => m_manager.KeepForeverRegex != null && m_manager.KeepForeverRegex.IsMatch(Key);
+
+    /// <summary>
+    /// Gets a value indicating if this entry should expire given the current time
+    /// </summary>
+    public bool ShouldExpireNow() => !NeverExpires && ExpiresOn < DateTime.UtcNow;
+
+    /// <summary>
     /// A task that can be awaited for new bytes
     /// </summary>
     private Task<long>? m_availableLength;

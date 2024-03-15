@@ -65,7 +65,7 @@ if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
         return Task.CompletedTask;
     });
 
-var cacheManager = new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod, appconfig.KeepForever);
+var cacheManager = new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod, appconfig.KeepForeverRegex);
 
 if (!string.IsNullOrWhiteSpace(appconfig.ManualExpireApiKey))
     app.MapPost("/reload", async ctx => {
@@ -90,11 +90,24 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = (context) =>
     {
         var headers = context.Context.Response.GetTypedHeaders();
-        headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+        if (appconfig.NoCacheRegex != null && appconfig.NoCacheRegex.IsMatch(context.File.Name))
         {
-            Public = true,
-            MaxAge = appconfig.ValidityPeriod.Add(TimeSpan.FromSeconds(-1))
-        };
+            headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+            {
+                Private = true,
+                MaxAge = null,
+                NoCache = true,
+                NoStore = true
+            };
+        }
+        else
+        {
+            headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+            {
+                Public = true,
+                MaxAge = appconfig.ValidityPeriod.Add(TimeSpan.FromSeconds(-1))
+            };
+        }
     }
 });
 

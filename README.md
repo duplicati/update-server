@@ -20,7 +20,8 @@ Optional variables:
 - `CACHE_TIME`: The duration items are kept cached. Can use s/m/h/d/w suffix. Default is `1d`.
 - `REDIRECT`: A url to redirect to, when accessing `/`.
 - `APIKEY`: API key to enable the `/reload` endpoint for forced expiration of cached items.
-- `KEEP_FOREVER`: Toggles no expiration on cached files, size limits may still expire items.
+- `KEEP_FOREVER_REGEX`: Regex to disable expiration on matching items; size limits may still expire items.
+- `NO_CACHE_REGEX`: Regex to disable caching on items matching expression.
 
 ## Force expire
 

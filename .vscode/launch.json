@@ -23,7 +23,9 @@
                 "CACHEPATH": "${workspaceFolder}/cache",
                 "MAX_SIZE": "30m",
                 // "REDIRECT": "https://google.com",
-                "APIKEY": "123"
+                "APIKEY": "123",
+                "NO_CACHE_REGEX": ".*\\.(json|manifest)",
+                "KEEP_FOREVER_REGEX": ".*/duplicati[-_][^/]*\\.[^\\.]+"
             }
         }
     ]
