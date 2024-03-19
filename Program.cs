@@ -4,12 +4,20 @@ using Microsoft.Extensions.FileProviders;
 using Serilog;
 using UpdaterMirror;
 
+var appconfig = ApplicationConfig.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 var logConfiguration = new LoggerConfiguration()
+    .Enrich.WithHttpRequestId()
+    .Enrich.FromLogContext();
+
+foreach (var header in appconfig.CustomLogHeaders.Split(";"))
+    logConfiguration = logConfiguration.Enrich.WithRequestHeader(header);
+
+logConfiguration = logConfiguration
     .WriteTo.Console();
 builder.Host.UseSerilog();
 
-var appconfig = ApplicationConfig.Load();
 
 if (!string.IsNullOrWhiteSpace(appconfig.SeqLogUrl))
     logConfiguration = logConfiguration.WriteTo.Seq(appconfig.SeqLogUrl, apiKey: appconfig.SeqLogApiKey);
@@ -83,6 +91,10 @@ if (!string.IsNullOrWhiteSpace(appconfig.ManualExpireApiKey))
         cacheManager.ForceExpire(keys.Where(x => !string.IsNullOrWhiteSpace(x)).ToHashSet());
     });
 
+Action<HttpContext>? customLog = string.IsNullOrWhiteSpace(appconfig.CustomLog)
+    ? null
+    : customLog = (c) => Log.Information(appconfig.CustomLog, c.Request.Host, c.Request.Path, c.Response.StatusCode, c.Response.ContentLength, c.Request, c.Response);
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new RemoteAccessFileProvider(cacheManager),
@@ -92,6 +104,8 @@ app.UseStaticFiles(new StaticFileOptions
     ServeUnknownFileTypes = true,
     OnPrepareResponse = (context) =>
     {
+        customLog?.Invoke(context.Context);
+
         var headers = context.Context.Response.GetTypedHeaders();
         if (appconfig.NoCacheRegex != null && appconfig.NoCacheRegex.IsMatch(context.File.Name))
         {

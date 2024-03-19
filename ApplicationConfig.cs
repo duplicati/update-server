@@ -18,6 +18,8 @@ namespace UpdaterMirror;
 /// <param name="ManualExpireApiKey">API key for manually expiring items</param>
 /// <param name="KeepForeverRegex">Expression to selectively disable expiration</param>
 /// <param name="NoCacheRegex">Expression to selectively disable caching</param>
+/// <param name="CustomLog">Custom log template</param>
+/// <param name="CustomLogHeaders">Custom log headers</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -30,7 +32,9 @@ public record ApplicationConfig(
     string RootRedirect,
     string ManualExpireApiKey,
     Regex? KeepForeverRegex,
-    Regex? NoCacheRegex
+    Regex? NoCacheRegex,
+    string? CustomLog,
+    string CustomLogHeaders
 )
 {
     /// <summary>
@@ -92,6 +96,16 @@ public record ApplicationConfig(
     private const string NoCacheRegexEnvKey = "NO_CACHE_REGEX";
 
     /// <summary>
+    /// The environment key for a custom log template
+    /// </summary>
+    private const string CustomLogEnvKey = "CUSTOM_LOG";
+
+    /// <summary>
+    /// The environment key for a custom log template
+    /// </summary>
+    private const string CustomLogHeadersEnvKey = "CUSTOM_LOG_HEADERS";
+
+    /// <summary>
     /// Loads settings from the environment
     /// </summary>
     /// <returns>A typed instance with settings</returns>
@@ -113,7 +127,10 @@ public record ApplicationConfig(
             Environment.GetEnvironmentVariable(ManualExpireApiKeyEnvKey) ?? string.Empty,
 
             ParseRegex(Environment.GetEnvironmentVariable(KeepForeverRegexEnvKey)),
-            ParseRegex(Environment.GetEnvironmentVariable(NoCacheRegexEnvKey))
+            ParseRegex(Environment.GetEnvironmentVariable(NoCacheRegexEnvKey)),
+
+            Environment.GetEnvironmentVariable(CustomLogEnvKey) ?? string.Empty,
+            Environment.GetEnvironmentVariable(CustomLogHeadersEnvKey) ?? string.Empty
         );
 
     /// <summary>
@@ -145,7 +162,8 @@ public record ApplicationConfig(
     private static bool ParseBool(string? value, bool defaultValue)
         => string.IsNullOrWhiteSpace(value)
             ? defaultValue
-            : value.ToLowerInvariant().Trim() switch {
+            : value.ToLowerInvariant().Trim() switch
+            {
                 "t" or "true" or "1" or "yes" or "on" => true,
                 "f" or "false" or "0" or "no" or "off" => false,
                 _ => defaultValue
@@ -167,9 +185,9 @@ public record ApplicationConfig(
         var multiplier = multiplierchar switch
         {
             'm' => 60,
-            'h' => 60*60,
-            'd' => 24*60*60,
-            'w' => 7*24*60*60,
+            'h' => 60 * 60,
+            'd' => 24 * 60 * 60,
+            'w' => 7 * 24 * 60 * 60,
             _ => 0
         };
 
@@ -199,7 +217,7 @@ public record ApplicationConfig(
             'g' => 3,
             't' => 4,
             'p' => 5,
-            _ => 0            
+            _ => 0
         };
 
         if (multiplier > 0 || multiplierchar == 'b')
