@@ -16,7 +16,9 @@ foreach (var header in appconfig.CustomLogHeaders.Split(";"))
 
 logConfiguration = logConfiguration
     .WriteTo.Console();
+
 builder.Host.UseSerilog();
+builder.Services.AddHttpContextAccessor();
 
 
 if (!string.IsNullOrWhiteSpace(appconfig.SeqLogUrl))
