@@ -53,14 +53,16 @@ var filetypeMappings = new Dictionary<string, string>(StringComparer.OrdinalIgno
     {".msi", "application/x-msi" },
 };
 
-app.MapGet("/robots.txt", async ctx => {
+app.MapGet("/robots.txt", async ctx =>
+{
     // Move along, nothing to see here
     ctx.Response.ContentType = "text/plain";
     await ctx.Response.WriteAsync(@"User-agent: *\r\nDisallow: /", ctx.RequestAborted);
 });
 
 if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
-    app.MapGet("/", ctx => { 
+    app.MapGet("/", ctx =>
+    {
         ctx.Response.Redirect(appconfig.RootRedirect, true);
         return Task.CompletedTask;
     });
@@ -68,7 +70,8 @@ if (!string.IsNullOrWhiteSpace(appconfig.RootRedirect))
 var cacheManager = new CacheManager(appconfig.PrimaryStorage, appconfig.CachePath, appconfig.MaxNotFound, appconfig.MaxSize, appconfig.ValidityPeriod, appconfig.KeepForeverRegex);
 
 if (!string.IsNullOrWhiteSpace(appconfig.ManualExpireApiKey))
-    app.MapPost("/reload", async ctx => {
+    app.MapPost("/reload", async ctx =>
+    {
         if (!ctx.Request.Headers.ContainsKey("X-API-KEY") || ctx.Request.Headers["X-API-KEY"].FirstOrDefault() != appconfig.ManualExpireApiKey)
         {
             ctx.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -84,7 +87,7 @@ app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new RemoteAccessFileProvider(cacheManager),
     ContentTypeProvider = new FileExtensionContentTypeProvider(filetypeMappings),
-    DefaultContentType = "application/octet-stream",     
+    DefaultContentType = "application/octet-stream",
     RequestPath = new PathString(""),
     ServeUnknownFileTypes = true,
     OnPrepareResponse = (context) =>
@@ -114,6 +117,10 @@ app.UseStaticFiles(new StaticFileOptions
 try
 {
     app.Run();
+}
+catch (Exception ex)
+{
+    Log.Error(ex, $"Terminating due to exception");
 }
 finally
 {
