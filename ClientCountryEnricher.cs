@@ -109,7 +109,11 @@ public class ClientCountryEnricher : ILogEventEnricher
         var country = "unknown";
         if (!string.IsNullOrWhiteSpace(ipAddress))
             try { country = _webserviceClient.Country(ipAddress).Country.IsoCode; }
-            catch { }
+            catch (Exception ex)
+            {
+                country = "error";
+                Log.Error(ex, "Error getting country from MaxMind");
+            }
 
         var countryProperty = new LogEventProperty(CountryPropertyName, new ScalarValue(country));
         httpContext.Items.Add(CountryItemKey, countryProperty);
