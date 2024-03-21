@@ -68,7 +68,7 @@ public class ClientCountryEnricher : ILogEventEnricher
     /// <param name="accountId">The MaxMind account id</param>
     /// <param name="licenseKey">The MaxMind license key</param>
     public ClientCountryEnricher(string forwardHeaderKey, int accountId, string licenseKey)
-        : this(forwardHeaderKey, new WebServiceClient(accountId, licenseKey, host: "geolite.info"), new HttpContextAccessor())
+        : this(forwardHeaderKey, new WebServiceClient(accountId, licenseKey), new HttpContextAccessor())
     {
     }
 
