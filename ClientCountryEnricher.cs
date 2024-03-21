@@ -112,7 +112,8 @@ public class ClientCountryEnricher : ILogEventEnricher
             catch (Exception ex)
             {
                 country = "error";
-                Log.Error(ex, "Error getting country from MaxMind");
+                var errorProperty = new LogEventProperty(CountryPropertyName + "Error", new ScalarValue(ex.Message));
+                logEvent.AddPropertyIfAbsent(errorProperty);
             }
 
         var countryProperty = new LogEventProperty(CountryPropertyName, new ScalarValue(country));
