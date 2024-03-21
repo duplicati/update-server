@@ -27,6 +27,10 @@ Optional variables:
 - `CUSTOM_LOG`: A custom serilog message template to write on requests that complete
 - `CUSTOM_LOG_HEADERS`: A semi-colon separated list of request headers to include in log data
 
+- `MAXMIND_ACCOUNT_ID`: The Maxmind accountid for geolite
+- `MAXMIND_LICENSE_KEY`: The Maxmind licensekey for geolite
+- `MAXMIND_IP_HEADER`: The header with the IP used for geolite lookups
+
 ## Force expire
 
 To force expire items, set `APIKEY` and use a request similar to:

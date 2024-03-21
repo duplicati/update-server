@@ -20,6 +20,9 @@ namespace UpdaterMirror;
 /// <param name="NoCacheRegex">Expression to selectively disable caching</param>
 /// <param name="CustomLog">Custom log template</param>
 /// <param name="CustomLogHeaders">Custom log headers</param>
+/// <param name="MaxmindAccountId">The account id for maxmind GeoIP</param>
+/// <param name="MaxmindLicenseKey">The license key for maxmind GeoIP</param>
+/// <param name="MaxmindIpHeader">The header to use for maxmind GeoIP</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -34,7 +37,10 @@ public record ApplicationConfig(
     Regex? KeepForeverRegex,
     Regex? NoCacheRegex,
     string? CustomLog,
-    string CustomLogHeaders
+    string CustomLogHeaders,
+    int MaxmindAccountId,
+    string MaxmindLicenseKey,
+    string MaxmindIpHeader
 )
 {
     /// <summary>
@@ -106,6 +112,21 @@ public record ApplicationConfig(
     private const string CustomLogHeadersEnvKey = "CUSTOM_LOG_HEADERS";
 
     /// <summary>
+    /// The environment key for Maxmind Geoip account id
+    /// </summary>
+    private const string MaxmindAccountIdEnvKey = "MAXMIND_ACCOUNT_ID";
+
+    /// <summary>
+    /// The environment key for Maxmind Geoip license key
+    /// </summary>
+    private const string MaxmindLicenseEnvKey = "MAXMIND_LICENSE_KEY";
+
+    /// <summary>
+    /// The environment key for the IP header to use for Maxmind Geoip
+    /// </summary>
+    private const string MaxmindIpHeaderEnvKey = "MAXMIND_IP_HEADER";
+
+    /// <summary>
     /// Loads settings from the environment
     /// </summary>
     /// <returns>A typed instance with settings</returns>
@@ -130,7 +151,11 @@ public record ApplicationConfig(
             ParseRegex(Environment.GetEnvironmentVariable(NoCacheRegexEnvKey)),
 
             Environment.GetEnvironmentVariable(CustomLogEnvKey) ?? string.Empty,
-            Environment.GetEnvironmentVariable(CustomLogHeadersEnvKey) ?? string.Empty
+            Environment.GetEnvironmentVariable(CustomLogHeadersEnvKey) ?? string.Empty,
+
+            (int)ParseSize(Environment.GetEnvironmentVariable(MaxmindAccountIdEnvKey), "0"),
+            Environment.GetEnvironmentVariable(MaxmindLicenseEnvKey) ?? string.Empty,
+            Environment.GetEnvironmentVariable(MaxmindIpHeaderEnvKey) ?? string.Empty
         );
 
     /// <summary>

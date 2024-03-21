@@ -14,6 +14,9 @@ var logConfiguration = new LoggerConfiguration()
 foreach (var header in appconfig.CustomLogHeaders.Split(";"))
     logConfiguration = logConfiguration.Enrich.WithRequestHeader(header);
 
+if (!string.IsNullOrWhiteSpace(appconfig.MaxmindLicenseKey))
+    logConfiguration = logConfiguration.Enrich.WithClientCountry(appconfig.MaxmindAccountId, appconfig.MaxmindLicenseKey, appconfig.MaxmindIpHeader);
+
 logConfiguration = logConfiguration
     .WriteTo.Console();
 
