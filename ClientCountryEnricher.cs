@@ -113,6 +113,7 @@ public class ClientCountryEnricher : ILogEventEnricher
             {
                 country = "error";
                 var errorProperty = new LogEventProperty(CountryPropertyName + "Error", new ScalarValue(ex.Message));
+                httpContext.Items.Add(CountryItemKey + "Error", errorProperty);
                 logEvent.AddPropertyIfAbsent(errorProperty);
             }
 
