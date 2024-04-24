@@ -75,7 +75,7 @@ public class RemoteAccessFileProvider : IFileProvider
         /// <inheritdoc/>
         public Stream CreateReadStream()
         {
-            if(!Exists)
+            if (!Exists)
                 throw new FileNotFoundException();
 
             var t = Item.Download();
@@ -84,7 +84,7 @@ public class RemoteAccessFileProvider : IFileProvider
             // If the download is complete, just give access to the cached file
             if (t.IsCompleted)
                 return fs;
-            
+
             return new WrappedStream(Item, t, fs);
         }
     }
@@ -158,6 +158,4 @@ public class RemoteAccessFileProvider : IFileProvider
         public override void Write(byte[] buffer, int offset, int count)
             => throw new InvalidOperationException();
     }
-
-
 }

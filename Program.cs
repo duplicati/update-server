@@ -14,7 +14,7 @@ var logConfiguration = new LoggerConfiguration()
 foreach (var header in appconfig.CustomLogHeaders.Split(";"))
     logConfiguration = logConfiguration.Enrich.WithRequestHeader(header);
 
-if (!string.IsNullOrWhiteSpace(appconfig.MaxmindLicenseKey))
+if (!string.IsNullOrWhiteSpace(appconfig.MaxmindLicenseKey) && appconfig.MaxmindAccountId > 0)
     logConfiguration = logConfiguration.Enrich.WithClientCountry(appconfig.MaxmindAccountId, appconfig.MaxmindLicenseKey, appconfig.MaxmindIpHeader);
 
 // Disabling console logging as it tends to leak memory
@@ -101,6 +101,20 @@ Action<HttpContext>? customLog = string.IsNullOrWhiteSpace(appconfig.CustomLog)
     ? null
     : customLog = (c) => Log.Information(appconfig.CustomLog, c.Request.Host, c.Request.Path, c.Response.StatusCode, c.Response.ContentLength, c.Request, c.Response);
 
+var cacheControlPrivate = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+{
+    Private = true,
+    MaxAge = null,
+    NoCache = true,
+    NoStore = true
+};
+
+var cacheControlPublic = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+{
+    Public = true,
+    MaxAge = appconfig.ValidityPeriod.Add(TimeSpan.FromSeconds(-1))
+};
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new RemoteAccessFileProvider(cacheManager),
@@ -115,21 +129,11 @@ app.UseStaticFiles(new StaticFileOptions
         var headers = context.Context.Response.GetTypedHeaders();
         if (appconfig.NoCacheRegex != null && appconfig.NoCacheRegex.IsMatch(context.File.Name))
         {
-            headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
-            {
-                Private = true,
-                MaxAge = null,
-                NoCache = true,
-                NoStore = true
-            };
+            headers.CacheControl = cacheControlPrivate;
         }
         else
         {
-            headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
-            {
-                Public = true,
-                MaxAge = appconfig.ValidityPeriod.Add(TimeSpan.FromSeconds(-1))
-            };
+            headers.CacheControl = cacheControlPublic;
         }
     }
 });
