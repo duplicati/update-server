@@ -14,7 +14,7 @@ public class RemoteAccessFileProvider : IFileProvider
     private readonly CacheManager m_manager;
 
     /// <summary>
-    /// Constructs a new <see cref="RemotemAccessFileProvider"/>
+    /// Constructs a new <see cref="RemoteAccessFileProvider"/>
     /// </summary>
     /// <param name="manager">The manager to wrap</param>
     public RemoteAccessFileProvider(CacheManager manager)

@@ -17,13 +17,11 @@ foreach (var header in appconfig.CustomLogHeaders.Split(";"))
 if (!string.IsNullOrWhiteSpace(appconfig.MaxmindLicenseKey) && appconfig.MaxmindAccountId > 0)
     logConfiguration = logConfiguration.Enrich.WithClientCountry(appconfig.MaxmindAccountId, appconfig.MaxmindLicenseKey, appconfig.MaxmindIpHeader);
 
-// Disabling console logging as it tends to leak memory
-// logConfiguration = logConfiguration
-//     .WriteTo.Console();
+logConfiguration = logConfiguration
+    .WriteTo.Console();
 
 builder.Host.UseSerilog();
 builder.Services.AddHttpContextAccessor();
-
 
 if (!string.IsNullOrWhiteSpace(appconfig.SeqLogUrl))
     logConfiguration = logConfiguration.WriteTo.Seq(appconfig.SeqLogUrl, apiKey: appconfig.SeqLogApiKey, queueSizeLimit: 1000);

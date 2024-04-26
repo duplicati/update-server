@@ -82,7 +82,7 @@ public class RemoteAccessItem
     /// A task that can be awaited for download completion
     /// </summary>
     private Task<bool>? m_downloaded;
-    
+
     /// <summary>
     /// The currently available bytes in the local cache file
     /// </summary>
@@ -147,7 +147,7 @@ public class RemoteAccessItem
     public Task<bool> Exists()
     {
         TaskCompletionSource<bool>? tcs = null;
-        lock(m_lock)
+        lock (m_lock)
         {
             // If we are all but brand-new, there is already a task
             if (State != AccessState.Created)
@@ -155,15 +155,16 @@ public class RemoteAccessItem
 
             // This thread was first in, so make it handle the query
             State = AccessState.Querying;
-            tcs = new TaskCompletionSource<bool>();  
-            m_exists = tcs.Task;          
+            tcs = new TaskCompletionSource<bool>();
+            m_exists = tcs.Task;
         }
 
         // Get the info
-        Task.Run(async () => {
+        Task.Run(async () =>
+        {
             // Assume failure
             var state = AccessState.NotFound;
-            
+
             try
             {
                 var res = await m_manager.Store.GetInfoAsync(Key);
@@ -175,13 +176,17 @@ public class RemoteAccessItem
                     LastModified = res.LastModified ?? DateTime.UnixEpoch;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Log.Warning(ex, $"Error when reading info for key {Key}");
+                // Don't log 404s, they are expected
+                if (ex is Amazon.S3.AmazonS3Exception s3ex && s3ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    state = AccessState.NotFound;
+                else
+                    Log.Warning(ex, $"Error when reading info for key {Key}");
             }
 
             // Update and signal completion
-            lock(m_lock)
+            lock (m_lock)
             {
                 State = state;
                 tcs.SetResult(state == AccessState.Found);
@@ -197,7 +202,7 @@ public class RemoteAccessItem
     /// <returns>The local path or null</returns>
     public string? GetLocalPathIfDownloaded()
     {
-        lock(m_lock)
+        lock (m_lock)
             return State == AccessState.Downloaded
                 ? LocalPath
                 : null;
@@ -209,7 +214,7 @@ public class RemoteAccessItem
     /// <returns>The filestream</returns>
     public FileStream GetLocalFileStream()
     {
-        lock(m_lock)
+        lock (m_lock)
             if (State == AccessState.Active || State == AccessState.Downloaded)
                 return new FileStream(LocalPath!, FileMode.Open, FileAccess.Read, FileShare.Read);
 
@@ -221,18 +226,18 @@ public class RemoteAccessItem
     /// </summary>
     /// <returns><c>true</c> if the file was downloaded; <c>false</c> otherwise</returns>
     public Task<bool> Download()
-    {        
+    {
         // Ensure we have the correct state, and stop if this is an invalid request
         if (!Exists().Result)
             throw new FileNotFoundException();
-    
+
         // Prepare for reporting
         TaskCompletionSource<bool>? tcs = null;
         TaskCompletionSource<long>? pgtcs = null;
         string? tempFile = null;
         FileStream? fs = null;
 
-        lock(m_lock)
+        lock (m_lock)
         {
             // If this is the first thread in here, set up progress tasks
             // All states prior to Found are handled by the query
@@ -240,14 +245,14 @@ public class RemoteAccessItem
             {
                 tempFile = Path.Combine(m_manager.CachePath, $"{DateTime.UtcNow.Ticks}-{Guid.NewGuid():N}");
                 fs = new FileStream(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-                
+
                 State = AccessState.Active;
                 tcs = new TaskCompletionSource<bool>();
                 pgtcs = new TaskCompletionSource<long>();
                 m_downloaded = tcs.Task;
                 m_availableLength = pgtcs.Task;
                 LocalPath = tempFile;
-                
+
             }
         }
 
@@ -256,8 +261,9 @@ public class RemoteAccessItem
             return m_downloaded!;
 
         // Run this detached from the caller
-        Task.Run(() => {
-            try 
+        Task.Run(() =>
+        {
+            try
             {
                 // Get stream
                 using var stream = m_manager.Store.ReadAsync(Key).Result;
@@ -266,14 +272,14 @@ public class RemoteAccessItem
 
                 // Make a reasonable sized buffer
                 var buffer = new byte[1024 * 8];
-                while(true)
+                while (true)
                 {
                     var r = stream.Read(buffer, 0, buffer.Length);
-                                        
+
                     // Standard .Net completion signal
                     if (r == 0)
                         break;
-                    
+
                     // Write to local cache file
                     fs!.Write(buffer, 0, r);
                     fs.Flush();
@@ -289,7 +295,7 @@ public class RemoteAccessItem
                 }
 
                 // Completed, update states
-                lock(m_lock)
+                lock (m_lock)
                 {
                     State = AccessState.Downloaded;
                     tcs.SetResult(true);
@@ -302,7 +308,7 @@ public class RemoteAccessItem
                 // Update the size metric, no locks held
                 m_manager.ReportCompleted(this);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Warning(ex, $"Failed to download key: {Key}");
             }
@@ -316,7 +322,7 @@ public class RemoteAccessItem
                     try { File.Delete(tempFile); }
                     catch { }
 
-                lock(m_lock)
+                lock (m_lock)
                 {
                     // If we did not complete, reset everything
                     if (State != AccessState.Downloaded)
@@ -331,7 +337,7 @@ public class RemoteAccessItem
         });
 
         // Return the task for awaiting
-        return m_downloaded!;     
+        return m_downloaded!;
     }
 
     /// <summary>
@@ -341,7 +347,7 @@ public class RemoteAccessItem
     {
         // Grab and update
         AccessState prevState;
-        lock(m_lock)
+        lock (m_lock)
         {
             prevState = State;
             State = AccessState.Expired;
