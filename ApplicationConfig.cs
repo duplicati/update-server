@@ -23,6 +23,9 @@ namespace UpdaterMirror;
 /// <param name="MaxmindAccountId">The account id for maxmind GeoIP</param>
 /// <param name="MaxmindLicenseKey">The license key for maxmind GeoIP</param>
 /// <param name="MaxmindIpHeader">The header to use for maxmind GeoIP</param>
+/// <param name="NotFoundHtmlKey">The key for the not-found html file</param>
+/// <param name="IndexHtmlKey">The key for the index html file</param>
+/// <param name="IndexHtmlRegex">The regex to apply to the index html file</param>
 public record ApplicationConfig(
     string PrimaryStorage,
     string? TestFilesStorage,
@@ -40,7 +43,10 @@ public record ApplicationConfig(
     string CustomLogHeaders,
     int MaxmindAccountId,
     string MaxmindLicenseKey,
-    string MaxmindIpHeader
+    string MaxmindIpHeader,
+    string NotFoundHtmlKey,
+    string IndexHtmlKey,
+    Regex? IndexHtmlRegex
 )
 {
     /// <summary>
@@ -127,6 +133,21 @@ public record ApplicationConfig(
     private const string MaxmindIpHeaderEnvKey = "MAXMIND_IP_HEADER";
 
     /// <summary>
+    /// The environment key for the not-found html file
+    /// </summary>
+    private const string NotFoundHtmlKeyEnvKey = "NOTFOUND_HTML";
+
+    /// <summary>
+    /// The environment key for the index html file
+    /// </summary>
+    private const string IndexHtmlKeyEnvKey = "INDEX_HTML";
+
+    /// <summary>
+    /// The environment key for when to apply the index html regex
+    /// </summary>
+    private const string IndexHtmlRegexEnvKey = "INDEX_HTML_REGEX";
+
+    /// <summary>
     /// Loads settings from the environment
     /// </summary>
     /// <returns>A typed instance with settings</returns>
@@ -155,7 +176,11 @@ public record ApplicationConfig(
 
             (int)ParseSize(Environment.GetEnvironmentVariable(MaxmindAccountIdEnvKey), "0"),
             Environment.GetEnvironmentVariable(MaxmindLicenseEnvKey) ?? string.Empty,
-            Environment.GetEnvironmentVariable(MaxmindIpHeaderEnvKey) ?? string.Empty
+            Environment.GetEnvironmentVariable(MaxmindIpHeaderEnvKey) ?? string.Empty,
+
+            Environment.GetEnvironmentVariable(NotFoundHtmlKeyEnvKey) ?? string.Empty,
+            Environment.GetEnvironmentVariable(IndexHtmlKeyEnvKey) ?? string.Empty,
+            ParseRegex(Environment.GetEnvironmentVariable(IndexHtmlRegexEnvKey))
         );
 
     /// <summary>

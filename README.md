@@ -31,6 +31,10 @@ Optional variables:
 - `MAXMIND_LICENSE_KEY`: The Maxmind licensekey for geolite
 - `MAXMIND_IP_HEADER`: The header with the IP used for geolite lookups
 
+- `NOTFOUND_HTML`: A path into the primary storage where the 404 page is loaded from
+- `INDEX_HTML`: A path into the primary storage where the index.html page is loaded from
+- `INDEX_HTML_REGEX`: A regex that selects what paths to apply the index html for
+
 ## Force expire
 
 To force expire items, set `APIKEY` and use a request similar to:

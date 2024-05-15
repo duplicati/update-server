@@ -49,6 +49,23 @@ public class RemoteAccessFileProvider : IFileProvider
         => NullChangeToken.Singleton;
 
     /// <summary>
+    /// Helper method to get a <see cref="IFileInfo"/> for a remote access item with async support
+    /// </summary>
+    /// <param name="subpath">The path to get the item for</param>
+    /// <returns>The item or <c>null</c></returns>
+    public async Task<IFileInfo?> GetRemoteAccessItem(string subpath)
+    {
+        var res = GetFileInfo(subpath);
+        if (res is not WrappedRemoteAccess w)
+            return null;
+
+        if (!await w.Item.Exists())
+            return null;
+
+        return w;
+    }
+
+    /// <summary>
     /// Wrapping <see cref="RemoteAccessItem"/> in <see cref="IFileInfo"/>
     /// </summary>
     /// <param name="Item"></param>

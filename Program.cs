@@ -113,9 +113,10 @@ var cacheControlPublic = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
     MaxAge = appconfig.ValidityPeriod.Add(TimeSpan.FromSeconds(-1))
 };
 
+var fileProvider = new RemoteAccessFileProvider(cacheManager);
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new RemoteAccessFileProvider(cacheManager),
+    FileProvider = fileProvider,
     ContentTypeProvider = new FileExtensionContentTypeProvider(filetypeMappings),
     DefaultContentType = "application/octet-stream",
     RequestPath = new PathString(""),
@@ -135,6 +136,53 @@ app.UseStaticFiles(new StaticFileOptions
         }
     }
 });
+
+
+if (!string.IsNullOrWhiteSpace(appconfig.NotFoundHtmlKey) || !string.IsNullOrWhiteSpace(appconfig.IndexHtmlKey))
+    app.Use(async (context, next) =>
+    {
+        await next();
+
+        if (context.Response.StatusCode == 404)
+        {
+            if (!string.IsNullOrWhiteSpace(appconfig.IndexHtmlKey) && appconfig.IndexHtmlRegex != null && appconfig.IndexHtmlRegex.IsMatch(context.Request.Path))
+            {
+                var path = context.Request.Path.ToString();
+                var lastSegment = path.Split('/').Last();
+
+                if (!lastSegment.Contains('.') && lastSegment.Length > 0 && !path.EndsWith('/'))
+                {
+                    context.Response.Redirect($"{path.TrimEnd('/')}/", true);
+                    return;
+                }
+
+                if (!lastSegment.Contains('.') || lastSegment.Equals("index.html") || lastSegment.Equals("index.htm") || lastSegment.Equals("default.html") || lastSegment.Equals("default.htm"))
+                {
+                    var accessItem = await fileProvider.GetRemoteAccessItem(appconfig.IndexHtmlKey);
+                    if (accessItem != null && accessItem.Exists)
+                    {
+                        context.Response.ContentType = "text/html";
+                        context.Response.StatusCode = 200;
+                        using var fs = accessItem.CreateReadStream();
+                        await fs.CopyToAsync(context.Response.Body, context.RequestAborted);
+                        return;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(appconfig.NotFoundHtmlKey))
+            {
+                var accessItem = await fileProvider.GetRemoteAccessItem(appconfig.NotFoundHtmlKey);
+                if (accessItem != null && accessItem.Exists)
+                {
+                    context.Response.ContentType = "text/html";
+                    using var fs = accessItem.CreateReadStream();
+                    await fs.CopyToAsync(context.Response.Body, context.RequestAborted);
+                    return;
+                }
+            }
+        }
+    });
 
 try
 {
