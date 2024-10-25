@@ -22,6 +22,14 @@ logConfiguration = logConfiguration
 
 builder.Host.UseSerilog();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder
+        => builder
+            .AllowAnyOrigin()
+            .WithMethods("GET", "HEAD")
+    );
+});
 
 if (!string.IsNullOrWhiteSpace(appconfig.SeqLogUrl))
     logConfiguration = logConfiguration.WriteTo.Seq(appconfig.SeqLogUrl, apiKey: appconfig.SeqLogApiKey, queueSizeLimit: 1000);
@@ -35,6 +43,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
+
+app.UseCors();
 
 // Support LetsEncrypt
 var le_path = Path.Combine(Directory.GetCurrentDirectory(), @".well-known");
